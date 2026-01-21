@@ -49,7 +49,6 @@ To quantify spatial sampling effort and ensure consistency across transects, I c
 dat <- read_csv("data/data_gmocc_all-ut.csv") %>%
   clean_names()
 
-# ---- Calculating Distances ----
 # exclude detection points from line path
 dat <- dat %>%
   filter(!is.na(col_point), col_point != 6) 
@@ -64,15 +63,14 @@ transect_dist <- dat %>%
     dy = utm_y - lag(utm_y),               # calculating the difference in Y from the previous point
     seg_m = sqrt(dx^2 + dy^2)) %>%         # calculating the pythagorean distance for the line segment between points
   summarise(
-    n_points   = n(),
+    n_points = n(),
     n_segments = sum(!is.na(seg_m)),
-    path_m     = sum(seg_m, na.rm = TRUE),                                       # sum of all segment lengths (actual path)
+    path_m = sum(seg_m, na.rm = TRUE),                                       # sum of all segment lengths (actual path)
     straight_m = sqrt((last(utm_x) - first(utm_x))^2 +
                         (last(utm_y) - first(utm_y))^2),                         # start to end straight line
     curve  = ifelse(straight_m > 0, path_m / straight_m, NA_real_),              # how curvy the path is; curviness ratio; path/straight
     .groups = "drop") %>%          
-  mutate(
-    path_km = path_m / 1000,                                                     # m to km convert
+  mutate(path_km = path_m / 1000,                                                     # m to km convert
     straight_km = straight_m / 1000)
 
 transect_dist
@@ -117,7 +115,6 @@ data <- read.csv("data/data_gmocc_all-ut.csv")
 
 names(data) <- trimws(names(data))
 
-# ---- Data Wrangling ----
 # select just survey hour data
 hours <- data %>%
   select(site_id, tran_id, date, obs_1, obs_2, obs_3, obs_4, time, col_point) %>%
@@ -131,12 +128,12 @@ hours <- hours %>%
     values_from = time,
     names_prefix = "col_point_") %>%
   rename(start_time = col_point_1,
-         end_time   = col_point_5)
+         end_time = col_point_5)
   
 survey_hours <- hours %>%
   mutate(
-    start_time = as_hms(parse_date_time(start_time, orders = c("H:M", "H:M:S"))),           # Convert to hms times
-    end_time   = as_hms(parse_date_time(end_time,   orders = c("H:M", "H:M:S"))),
+    start_time = as_hms(parse_date_time(start_time, orders = c("H:M", "H:M:S"))),           # convert to hms 
+    end_time = as_hms(parse_date_time(end_time, orders = c("H:M", "H:M:S"))),
     duration_hr = as.numeric(end_time - start_time, units = "hours"),                       # duration in hours
     n_observers = rowSums(!is.na(select(., obs_1:obs_4)) & select(., obs_1:obs_4) != ""),   # count observers
     total_hours = duration_hr * n_observers)                                                # person-hours
@@ -188,7 +185,7 @@ no_den <- c("site_id","tran_id","date","col_point","utm_x","utm_y",
             "detection","shr_ne","shr_nw","shr_se","shr_sw",
            "shr_m_area", "pp_mam", "pp_gbird", "pp_rep", "med_vpd", "shr_m_density")
 
-# variable list (numeric only, excluding above and prey presence)
+# vars list
 density_vars <- data_gmocc %>%
   select(where(is.numeric) &
            !all_of(no_den)) %>%
@@ -197,7 +194,7 @@ density_vars <- data_gmocc %>%
 
 ```{r all site var density plot}
 # create a pivot longer table to plot all variables at once
-data_gmocc.long <- data_gmocc |>
+data_gmocc.long <- data_gmocc %>%
   pivot_longer(
     cols = all_of(density_vars),
     names_to = "variable",
@@ -206,7 +203,7 @@ data_gmocc.long <- data_gmocc |>
 # create the plot
 ggplot(data_gmocc.long, aes(x = value)) +
   geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
-  facet_wrap(~ variable, scales = "free", ncol = 3) +       # facet wrap is how we see all at once
+  facet_wrap(~ variable, scales = "free", ncol = 3) + 
   labs(title = "Density Plots of All Variables",
        x = "Value", y = "Density") +
   theme_minimal()
@@ -266,7 +263,6 @@ t.length <- read.csv("data/data_gmocc_tran-distance.csv", stringsAsFactors = FAL
 t.length$tran_id <- trimws(t.length$tran_id)
 t.length <- t.length[!grepl("OTD", t.length$tran_id, ignore.case = TRUE), ]
 
-
 # calculate time since midnight
 time <- strsplit(ifelse(is.na(gm$time), "NA:NA:NA", gm$time), ":", fixed = TRUE)
 hh <- as.numeric(sapply(time, `[`, 1))
@@ -283,39 +279,31 @@ gm <- gm %>%
   group_by(site_id, tran_id) %>%
   dplyr::group_modify(~ {
     df <- .x
-    col.pts <- which(df$col_point %in% 1:5 & !is.na(df$time_sec))    # col_point 1-5
-    det.pt   <- which(df$col_point == 6   & !is.na(df$time_sec))     # col_point 6 (detection point)
-    if (length(col.pts) == 0 || length(det.pt) == 0) return(df)      # if no col_point 1-5 or col_point 6, do nothing ()
-    
-    for (i in det.pt) {                                               # for each col_point 6 row, find nearest-in-time col_point 1–5 and copy covariates
-      dif   <- abs(df$time_sec[col.pts] - df$time_sec[i])
-      nearest <- col.pts[which.min(dif)]
-      df[nearest, replacement.covs] <- df[i, replacement.covs]
-    }
-    df
-  }) %>%
+    col.pts <- which(df$col_point %in% 1:5 & !is.na(df$time_sec)) # col_point 1-5
+    det.pt <- which(df$col_point == 6 & !is.na(df$time_sec))      # col_point 6 (detection point)
+    if (length(col.pts) == 0 || length(det.pt) == 0) return(df)   # if no col_point 1-5 or col_point 6, do nothing ()
+    for (i in det.pt) {                                             # for each col_point 6 row, and copy covariates
+      dif <- abs(df$time_sec[col.pts] - df$time_sec[i])             # difference in time since midnight
+      nearest <- col.pts[which.min(dif)]                            # find nearest in time col_point 1–5        
+      df[nearest, replacement.covs] <- df[i, replacement.covs]}
+    df}) %>%
   ungroup()
 
-
-# keep only on-transect collection points 1–5 (removes off-transect detections)
+# keep only on-transect collection points 1–5 (remove off-transect detections)
 transects <- subset(gm, col_point %in% 1:5)
-
-# sanity check transects and detection points: 
-# transects %>% filter(detection == 1)
 
 # add the transect length (path_km)
 transects <- merge(transects, t.length[, c("site_id","tran_id","path_km")],
                    by = c("site_id","tran_id"), all.x = TRUE)
 
-
-# transect-level observation covariates from the 1–5 col. points
+# transect-level observation covariates
 tran.covs <- transects %>%
   group_by(site_id, tran_id) %>%
   summarise(
     detection = sum(detection, na.rm = TRUE),
     time_sec = mean(time_sec, na.rm = TRUE),
     air_temp = mean(air_temp, na.rm = TRUE),
-    gr_temp = mean(gr_temp,  na.rm = TRUE),
+    gr_temp = mean(gr_temp, na.rm = TRUE),
     wind = mean(avg_wind_spd, na.rm = TRUE),
     vpd = mean(vpd, na.rm = TRUE),
     rockiness = mean(rock_ind, na.rm = TRUE),
@@ -546,7 +534,6 @@ global.rep_chi <- ppcOcc(global_model, fit.stat = "chi-squared", group = 2) # re
 
 summary(global.site_chi)
 summary(global.rep_chi)
-
 ```
 
 Bayesian p-values for the site and replicate data using the Chi-squared test fall within acceptable ranges indicating no lack of fit..
@@ -569,9 +556,9 @@ Correlation coefficients among occupancy covariates are generally low, with the 
 det.cov_df <- data.frame(
   rock = as.vector(det.cov_list$rock),
   t_air = as.vector(det.cov_list$t_air),
-  t_gr  = as.vector(det.cov_list$t_gr),
-  vpd   = as.vector(det.cov_list$vpd),
-  wind  = as.vector(det.cov_list$wind))
+  t_gr = as.vector(det.cov_list$t_gr),
+  vpd = as.vector(det.cov_list$vpd),
+  wind = as.vector(det.cov_list$wind))
 
 det.cov_df <- det.cov_df[complete.cases(det.cov_df), ]
 round(cor(det.cov_df, use ="pairwise.complete.obs" ), 2)
@@ -1308,7 +1295,6 @@ In the following sections histograms of results and box plots of raw data help t
 ```{r bs histograms}
 # function to plot bootstrap results
 plot.hist <- function(df, colname, xlab) {
-  
   ggplot(df, aes(x = .data[[colname]])) +
     geom_histogram(bins = 30, fill = "tan", color = "black") +
     geom_vline(xintercept = 0, linetype = "dashed") +
@@ -1463,7 +1449,6 @@ dm.waic_tbl <-
     delta = WAIC - min(WAIC),
     weight = exp(-0.5 * delta)/ sum (exp(-0.5 * delta))) %>%
   arrange(WAIC)
-
 
 dm.waic_tbl
 ```
@@ -1971,10 +1956,6 @@ occ.cov_df$habitat <- factor(
   occ.cov_df$habitat,
   levels = c("low", "medium", "high"))
 
-# sanity checks
-# ensure every site has habitat class
-#stopifnot(!any(is.na(occ.cov_df$habitat)))
-
 # ensure habitat classes have 2 sites each
 table(occ.cov_df$habitat)
 
@@ -2069,7 +2050,6 @@ habitat.psi_df <- data.frame(
                quantile(psi_medium, 0.975),
                quantile(psi_high, 0.975)))
 
-
 # simplify df of habitat classes for plotting
 habitat.psi_df <- habitat.psi_df %>%
   select(class, psi_mean, psi_lcl, psi_ucl)
@@ -2092,10 +2072,6 @@ ggplot(habitat.psi_df, aes(x = class, y = psi_mean)) +
 prob.high_v_med <- mean(habitat.psi_samples[, "high"] > habitat.psi_samples[, "medium"])
 prob.high_v_low <- mean(habitat.psi_samples[, "high"] > habitat.psi_samples[, "low"])
 prob.med_v_low  <- mean(habitat.psi_samples[, "medium"] > habitat.psi_samples[, "low"])
-
-#prob.high_v_med
-#prob.high_v_low
-#prob.med_v_low
 
 # habitat class comparison table
 habitat.comp_tbl <- data.frame(
