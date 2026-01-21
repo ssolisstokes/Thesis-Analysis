@@ -27,8 +27,7 @@ knitr::opts_chunk$set(
 
 ```
 
-This document serves as a chronology of the analysis I've completed to date for the 2025 Gila monster occupancy project. I've excluded a decent amount of the code from this version of the document for a smoother read-through, if you'd like to see the entire code [visit this page](thesis-update-with-code.html).
-
+This document serves as a chronology of the analysis I've completed to date for the 2025 Gila monster occupancy project. I've excluded a decent amount of the code from this version of the document for a smoother read-through, if you'd like to see the entire code [visit this page](https://ssolisstokes.github.io/Thesis-Analysis/htmls/thesis-update-with-code.html).
 
 # Summary Tables
 
