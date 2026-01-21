@@ -1,0 +1,436 @@
+---
+title: "GMOCC Density Plots"
+author: "SSS"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+    theme:
+      success: "#d9534f"
+      bootswatch: sandstone
+      bslib: true
+---
+
+<style type="text/css">
+
+body{ /* Normal  */
+      font-size: 14px;
+      text-align: justified;
+}
+.author {
+  font-size: 12px;
+  color: #8e8c84;
+  text-align: center;
+}
+h1.title { /* Title*/
+  font-size: 32px;
+  color: Black;
+  text-align: center;
+}
+h1 { /* Header 1 */
+  font-size: 24px;
+  color: Grey;
+}
+h2 {/* Header 2 */
+    font-size: 18px;
+    color: Black;
+    text-align: center;
+    font-weight: bold;
+}
+h3 {/* Header 3 */
+    font-size: 16px;
+}
+</style>
+
+```{r setup, include=FALSE}
+# load in libraries
+
+library(tidyverse)
+library(janitor)
+library(dplyr)
+library(ggplot2)
+library(patchwork)
+
+# bring in data set
+data_gmocc <- read.csv("data_gmocc_all-edited.csv")
+
+# create an object of the columns not to be included in the density plots
+no_den <- c("site_id", "tran_id", "col_point", "date", "utm_x", "utm_y", "detection")
+
+# create the df for the variables
+density_vars <- data_gmocc |>
+  select(where(is.numeric) & 
+           !all_of(no_den) & 
+           !matches("shr_|pp_", ignore.case = TRUE)) |>   # not using shrub or prey presence data for now
+  names()
+
+# create a pivot longer table to plot all variables at once
+data_gmocc.long <- data_gmocc |>
+  pivot_longer(
+    cols = all_of(density_vars),
+    names_to = "variable",
+    values_to = "value")
+
+#knitr::opts_chunk$set(echo = TRUEmessage = FALSE,warning = FALSE)
+```
+
+# All Variables
+
+```{r all variables, echo=FALSE}
+plot_all.vars <-
+  ggplot(data_gmocc.long, aes(x = value)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  facet_wrap(~ variable, scales = "free", ncol = 3) +       # facet wrap is how we see all at once
+  labs(title = "Density Plots of All Variables",
+       x = "Value", y = "Density") +
+  theme_minimal()
+
+plot_all.vars
+
+```
+
+# Indiviudal Plots
+
+## Rockiness
+
+### Density
+
+<br>
+
+```{r rock density, echo=FALSE}
+plot_rock <-
+  ggplot(data_gmocc, aes(x = rock_ind)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  labs(
+    title = "Density Plot of Rockiness",
+    x = "Rockiness Index",
+    y= "Density") +
+  theme_minimal()
+
+plot_rock
+```
+
+### Detection vs Non Detection
+
+<br>
+
+```{r rock detection vs non detection, echo=FALSE}
+plot_rock.det <-
+ggplot(data_gmocc, aes(x = rock_ind, fill = factor(detection))) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("0" = "grey", "1" = "darkorange2"),
+                    labels = c("No Detection", "Detection")) +
+  labs(
+    title = "Rockiness by Detection Status",
+    x = "Rockiness Index Values",
+    y = "Density",
+    fill = "Detection") +
+  theme_minimal()
+
+plot_rock.det
+```
+
+### Detection Probability
+
+<br>
+
+```{r rock, echo=FALSE, message=FALSE, warning=FALSE}
+plot_rock.dp <-
+  ggplot(data_gmocc, aes(x = rock_ind)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.6) +
+  geom_rug(data = subset(data_gmocc, detection == 1),                # rug marks where detections occurred
+           aes(x = rock_ind),
+           sides = "t", color = "black", alpha = 0.5) +
+  geom_smooth(aes(y = detection), method = "loess",                 # detection probability curve
+              se = FALSE, color = "black", size = 1) +
+  scale_y_continuous(name = "Density", sec.axis = sec_axis(~ ., name = "Detection probability (0–1)")) +
+  labs(
+    title = "Rockiness: Density & Detection Probabilty",
+    x = "Rockiness Index Values") +
+  theme_minimal()
+
+plot_rock.dp
+```
+
+## Air Temp
+### Density
+<br>
+```{r air density, echo=FALSE}
+plot_air.temp <-
+  ggplot(data_gmocc, aes(x = air_temp)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  labs(
+    title = "Density Plot of Air Temp (C)",
+    x = "Air Temp (C)",
+    y= "Density") +
+  theme_minimal()
+
+plot_air.temp
+```
+
+### Detection vs Non Detection
+<br>
+```{r air detection vs non detection, echo=FALSE}
+plot_air.temp.det <-
+  ggplot(data_gmocc, aes(x = air_temp, fill = factor(detection))) +
+  geom_density(alpha = 0.5) +
+  scale_fill_manual(values = c("0" = "grey", "1" = "darkorange2"),
+                    labels = c("No Detection", "Detection")) +
+  labs(
+    title = "Air Temp by Detection Status",
+    x = "Air Temp (C)",
+    y = "Density",
+    fill = "Detection"
+  ) +
+  theme_minimal()
+
+plot_air.temp.det
+```
+
+### Detection Probability
+<br>
+```{r air detection probability curve, echo=FALSE}
+plot_air.temp.dp <-
+ggplot(data_gmocc, aes(x = air_temp)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.6) +
+  geom_rug(data = subset(data_gmocc, detection == 1),                # rug marks where detections occurred
+           aes(x = air_temp),
+           sides = "t", color = "black", alpha = 0.5) +
+  geom_smooth(aes(y = detection), method = "loess",                 # detection probability curve
+              se = FALSE, color = "black", size = 1) +
+  scale_y_continuous(name = "Density", sec.axis = sec_axis(~ ., name = "Detection probability (0–1)")) +
+  labs(
+    title = "Air Temp: Density & Detection",
+    x = "Air Temp (°C)") +
+  theme_minimal()
+
+plot_air.temp.dp
+```
+
+## Ground Temp
+
+### Density
+<br>
+```{r ground density, echo=FALSE}
+plot_gr.temp <- 
+  ggplot(data_gmocc, aes(x = gr_temp)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  labs(
+    title = "Density Plot of Ground Temp (C)",
+    x = "Ground Temp (C)",
+    y= "Density") +
+  theme_minimal()
+
+plot_gr.temp
+```
+
+### Detection vs Non Detection
+<br>
+```{r ground detection vs non detection, echo=FALSE}
+plot_gr.temp.det <-
+  ggplot(data_gmocc, aes(x = gr_temp, fill = factor(detection))) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("0" = "grey", "1" = "darkorange2"),
+                    labels = c("No Detection", "Detection")) +
+  labs(
+    title = "Ground Temp by Detection Status",
+    x = "Ground Temp (C)",
+    y = "Density",
+    fill = "Detection"
+  ) +
+  theme_minimal()
+
+plot_gr.temp.det
+```
+
+### Detection Probability
+<br>
+```{r ground detection probability curve, echo=FALSE}
+plot_gr.temp.dp <-
+  ggplot(data_gmocc, aes(x = gr_temp)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.6) +
+  geom_rug(data = subset(data_gmocc, detection == 1),                # rug marks where detections occurred
+           aes(x = gr_temp),
+           sides = "t", color = "black", alpha = 0.5) +
+  geom_smooth(aes(y = detection), method = "loess",                 # detection probability curve
+              se = FALSE, color = "black", size = 1) +
+  scale_y_continuous(name = "Density", sec.axis = sec_axis(~ ., name = "Detection probability (0–1)")) +
+  labs(
+    title = "Ground Temp: Density & Detection",
+    x = "Ground Temp (°C)") +
+  theme_minimal()
+
+plot_gr.temp.dp
+```
+
+## Average Wind Speed
+
+### Density
+<br>
+```{r wind density, echo=FALSE}
+plot_aws <- 
+ggplot(data_gmocc, aes(x = avg_wind_spd)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  labs(
+    title = "Density Plot of Avg. Wind Speed (kmh)",
+    x = "Average Wind Speed (kmh)",
+    y= "Density") +
+  theme_minimal()
+
+plot_aws
+```
+
+### Detection vs Non Detection
+<br>
+```{r wind detection vs non detection, echo=FALSE}
+plot_aws.det <-
+  ggplot(data_gmocc, aes(x = avg_wind_spd, fill = factor(detection))) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("0" = "grey", "1" = "darkorange2"),
+                    labels = c("No Detection", "Detection")) +
+  labs(
+    title = "Avg. Wind Speed by Detection Status",
+    x = "Average Wind Speed (kmh)",
+    y = "Density",
+    fill = "Detection"
+  ) +
+  theme_minimal()
+
+plot_aws.det
+```
+
+### Detection Probability
+<br>
+```{r wind detection probability curve, echo=FALSE}
+plot_aws.dp <-
+  ggplot(data_gmocc, aes(x = avg_wind_spd)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.6) +
+  geom_rug(data = subset(data_gmocc, detection == 1),                # rug marks where detections occurred
+           aes(x = avg_wind_spd),
+           sides = "t", color = "black", alpha = 0.5) +
+  geom_smooth(aes(y = detection), method = "loess",                 # detection probability curve
+              se = FALSE, color = "black", size = 1) +
+  scale_y_continuous(name = "Density", sec.axis = sec_axis(~ ., name = "Detection probability (0–1)")) +
+  labs(
+    title = "Avg. Wind Speed: Density & Detection",
+    x = "Average Wind Speed (kmh)") +
+  theme_minimal()
+
+plot_aws.dp
+```
+
+## Relative Humdity
+
+### Density
+<br>
+```{r humidity density, echo=FALSE}
+plot_rel.hum <- 
+ggplot(data_gmocc, aes(x = rel_hum)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  labs(
+    title = "Density Plot of Relative Humidity (%)",
+    x = "Relative Humidity (%)",
+    y= "Density") +
+  theme_minimal()
+
+plot_rel.hum
+
+```
+
+### Detection vs Non Detection
+<br>
+```{r humidity detection vs non detection, echo=FALSE}
+
+plot_rel.hum.det <-
+  ggplot(data_gmocc, aes(x = rel_hum, fill = factor(detection))) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("0" = "grey", "1" = "darkorange2"),
+                    labels = c("No Detection", "Detection")) +
+  labs(
+    title = "Relative Humidity by Detection Status",
+    x = "Relative Humidity (%)",
+    y = "Density",
+    fill = "Detection"
+  ) +
+  theme_minimal()
+
+plot_rel.hum.det
+```
+
+### Detection Probability
+<br>
+```{r humidity detection probability curve, echo=FALSE}
+
+plot_rel.hum.dp <-
+  ggplot(data_gmocc, aes(x = rel_hum)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.6) +
+  geom_rug(data = subset(data_gmocc, detection == 1),                # rug marks where detections occurred
+           aes(x = rel_hum),
+           sides = "t", color = "black", alpha = 0.5) +
+  geom_smooth(aes(y = detection), method = "loess",                 # detection probability curve
+              se = FALSE, color = "black", size = 1) +
+  scale_y_continuous(name = "Density", sec.axis = sec_axis(~ ., name = "Detection probability (0–1)")) +
+  labs(
+    title = "Relative Humidity: Density & Detection",
+    x = "Relative Humidity (%)") +
+  theme_minimal()
+
+plot_rel.hum.dp
+```
+
+## Elevation
+
+### Density
+<br>
+```{r elevation density, echo=FALSE}
+plot_elev <- 
+ggplot(data_gmocc, aes(x = elev)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.7) +
+  labs(
+    title = "Density Plot of Elevation",
+    x = "Elevation (m)",
+    y= "Density") +
+  theme_minimal()
+
+plot_elev
+
+```
+
+### Detection vs Non Detection
+<br>
+```{r elevation detection vs non detection, echo=FALSE}
+plot_elev.det <-
+  ggplot(data_gmocc, aes(x = elev, fill = factor(detection))) +
+  geom_density(alpha = 0.6) +
+  scale_fill_manual(values = c("0" = "grey", "1" = "darkorange2"),
+                    labels = c("No Detection", "Detection")) +
+  labs(
+    title = "Elevation by Detection Status",
+    x = "Elevation (m)",
+    y = "Density",
+    fill = "Detection"
+  ) +
+  theme_minimal()
+
+plot_elev.det
+```
+
+### Detection Probability
+<br>
+```{r elevation detection probability curve, echo=FALSE}
+plot_elev.dp <-
+  ggplot(data_gmocc, aes(x = elev)) +
+  geom_density(fill = "darkorange2", color = "darkorange2", alpha = 0.6) +
+  geom_rug(data = subset(data_gmocc, detection == 1),                # rug marks where detections occurred
+           aes(x = elev),
+           sides = "t", color = "black", alpha = 0.5) +
+  geom_smooth(aes(y = detection), method = "loess",                 # detection probability curve
+              se = FALSE, color = "black", size = 1) +
+  scale_y_continuous(name = "Density", sec.axis = sec_axis(~ ., name = "Detection probability (0–1)")) +
+  labs(
+    title = "Elevation: Density & Detection",
+    x = "Elevation (m)") +
+  theme_minimal()
+
+plot_elev.dp
+```

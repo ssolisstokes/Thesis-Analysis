@@ -1,0 +1,400 @@
+---
+title: "Gila Monster Occupancy Surveys 2025"
+author: "Sienna Solis-Stokes"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_float: true
+---
+
+```{r setup, include=FALSE}
+# Load required libraries
+library(sf)
+library(tidyverse)
+library(leaflet)
+library(janitor)
+library(readr)
+library(dplyr)
+
+#import data
+data_occ <- read_csv("data_gmocc_all-ut.csv")
+
+# check errors
+problems(data_occ)
+
+# clean names
+transect_points <-  data_occ %>%
+  clean_names
+
+# view the site names
+unique(transect_points$site_id) #pick your site
+
+#knitr::opts_chunk$set(echo = FALSE)
+```
+This is a document utilized to report and check the accuracy UTMs collected during 2025 Gila monster (*Heloderma suspectum*) occupancy transect surveys.
+
+# Maps of individual study sites
+## Turkey Farm
+```{r leaflet: Turkey Farm, echo=FALSE}
+# filter out the ones for the spec. site
+transect_points_tf <- transect_points %>%
+  filter(site_id == "turkey_farm")
+
+# Convert to sf points (Nevada Zone 11N - EPSG:32611, Utah Zone 12N - EPSG:32612, WGS84 - EPSG:4326)
+transect_points_tf <- transect_points_tf %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# Create transect line geometries by grouping and connecting points
+transect_lines_tf <- transect_points_tf %>%
+  group_by(tran_id) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("LINESTRING")
+
+# Build leaflet map
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add transect lines
+  addPolylines(data = transect_lines_tf,
+               color = "blue",
+               weight = 3,
+               opacity = 1,
+               label = ~tran_id,
+               group = "transects") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = transect_points_tf,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect Points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect Points"),
+    options = layersControlOptions(collapsed = FALSE))
+```
+
+## White Reef
+```{r leaflet: White Reef, echo=FALSE}
+# filter out the ones for the spec. site
+transect_points_wr <- transect_points %>%
+  filter(site_id == "white_reef")
+
+# Convert to sf points (Nevada Zone 11N - EPSG:32611, Utah Zone 12N - EPSG:32612, WGS84 - EPSG:4326)
+transect_points_wr <- transect_points_wr %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# Create transect line geometries by grouping and connecting points
+transect_lines_wr <- transect_points_wr %>%
+  group_by(tran_id) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("LINESTRING")
+
+# Build leaflet map
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add transect lines
+  addPolylines(data = transect_lines_wr,
+               color = "blue",
+               opacity = 1,
+               weight = 3,
+               label = ~tran_id,
+               group = "transects") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = transect_points_wr,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect Points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect Points"),
+    options = layersControlOptions(collapsed = FALSE))
+```
+
+## Cove Wash
+```{r leaflet: Cove Wash, echo=FALSE}
+# filter out the ones for the spec. site
+transect_points_cw <- transect_points %>%
+  filter(site_id == "cove_wash")
+
+# Convert to sf points (Nevada Zone 11N - EPSG:32611, Utah Zone 12N - EPSG:32612, WGS84 - EPSG:4326)
+transect_points_cw <- transect_points_cw %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# Create transect line geometries by grouping and connecting points
+transect_lines_cw <- transect_points_cw %>%
+  group_by(tran_id) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("LINESTRING")
+
+# Build leaflet map
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add transect lines
+  addPolylines(data = transect_lines_cw,
+               color = "blue",
+               opacity = 1,
+               weight = 3,
+               label = ~tran_id,
+               group = "transects") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = transect_points_cw,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect Points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect Points"),
+    options = layersControlOptions(collapsed = FALSE))
+```
+
+## Paradise Canyon
+```{r leaflet: Paradise Canyon, echo=FALSE}
+# filter out the ones for the spec. site
+transect_points_pc <- transect_points %>%
+  filter(site_id == "paradise_canyon")
+
+# Convert to sf points (Nevada Zone 11N - EPSG:32611, Utah Zone 12N - EPSG:32612, WGS84 - EPSG:4326)
+transect_points_pc <- transect_points_pc %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# Create transect line geometries by grouping and connecting points
+transect_lines_pc <- transect_points_pc %>%
+  group_by(tran_id) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("LINESTRING")
+
+# Build leaflet map
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add transect lines
+  addPolylines(data = transect_lines_pc,
+               color = "blue",
+               opacity = 1,
+               weight = 3,
+               label = ~tran_id,
+               group = "transects") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = transect_points_pc,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect Points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect Points"),
+    options = layersControlOptions(collapsed = FALSE))
+```
+
+## Sun River
+```{r leaflet: Sun River, echo=FALSE}
+# filter out the ones for the spec. site
+transect_points_sr <- transect_points %>%
+  filter(site_id == "sun_river")
+
+# Convert to sf points (Nevada Zone 11N - EPSG:32611, Utah Zone 12N - EPSG:32612, WGS84 - EPSG:4326)
+transect_points_sr <- transect_points_sr %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# Create transect line geometries by grouping and connecting points
+transect_lines_sr <- transect_points_sr %>%
+  group_by(tran_id) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("LINESTRING")
+
+# Build leaflet map
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add transect lines
+  addPolylines(data = transect_lines_sr,
+               color = "blue",
+               opacity = 1,
+               weight = 3,
+               label = ~tran_id,
+               group = "transects") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = transect_points_sr,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect Points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect Points"),
+    options = layersControlOptions(collapsed = FALSE))
+
+```
+
+## Fort Pearce
+```{r leaflet: Fort Pearce, echo=FALSE}
+# filter out the ones for the spec. site
+transect_points_fp <- transect_points %>%
+  filter(site_id == "fort_pearce")
+
+# Convert to sf points (Nevada Zone 11N - EPSG:32611, Utah Zone 12N - EPSG:32612, WGS84 - EPSG:4326)
+transect_points_fp <- transect_points_fp %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# Create transect line geometries by grouping and connecting points
+transect_lines_fp <- transect_points_fp %>%
+  group_by(tran_id) %>%
+  summarise(geometry = st_combine(geometry)) %>%
+  st_cast("LINESTRING")
+
+# Build leaflet map
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add transect lines
+  addPolylines(data = transect_lines_fp,
+               color = "blue",
+               opacity = 1,
+               weight = 3,
+               label = ~tran_id,
+               group = "transects") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = transect_points_fp,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect Points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect Points"),
+    options = layersControlOptions(collapsed = FALSE))
+```
+
+# Detections
+```{r leaflet: Detection UTMs, echo=FALSE}
+##### CHECKING DETECTION UTMS #####
+# create detection dataset
+det_points <- 
+  data_occ %>%
+    filter(grepl("1", detection))
+
+# get the points into sf
+det_points_sf <- det_points %>%
+  st_as_sf(coords = c("utm_x", "utm_y"), crs = 32612) %>%
+  st_transform(crs = 4326)
+
+# create the leaflet
+#map_det_points <-
+  leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  
+  # Add points as markers
+  addCircleMarkers(data = det_points_sf,
+                   radius = 3,
+                   color = "darkorange",
+                   label = ~paste("Detection Point", tran_id),
+                   group = "detection points") %>%
+  
+  # Layer controls
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("detection points"),
+    options = layersControlOptions(collapsed = FALSE))
+
+```
+
+# Study Area
+```{r leafler: all sites and detections combined, echo=FALSE}
+##### ALL TRANSECTS #####
+
+## bind all transect lines together
+transect_lines_all <-
+  bind_rows(
+    transect_lines_cw,
+    transect_lines_fp,
+    transect_lines_pc,
+    transect_lines_sr,
+    transect_lines_tf,
+    transect_lines_wr)
+
+# bind all points together
+transect_points_all <-
+  bind_rows(
+    transect_points_cw,
+    transect_points_fp,
+    transect_points_pc,
+    transect_points_sr,
+    transect_points_tf,
+    transect_points_wr)
+
+# put all on one leaflet
+#map_transects_detections <-
+leaflet() %>%
+  addTiles(group = "OpenStreetMap") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri Satellite") %>%
+  # Add transect lines
+  addPolylines(data = transect_lines_all,
+               color = "black",
+               weight = 3,
+               opacity = 1,
+               label = ~tran_id,
+               group = "transects") %>%
+  # Add points as markers
+  addCircleMarkers(data = transect_points_all,
+                   radius = 3,
+                   color = "white",
+                   opacity = 1,
+                   label = ~paste(tran_id, "Collection Point", col_point),
+                   group = "transect points") %>%
+  addCircleMarkers(data = det_points_sf,
+                   radius = 5,
+                   color = "darkorange",
+            
+                   opacity = 1,
+                   label = ~paste("Detection Point", tran_id),
+                   group = "detection points") %>%
+  # Layer controls 
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "Esri Satellite"),
+    overlayGroups = c("transects", "transect points", "detection points"),
+    options = layersControlOptions(collapsed = FALSE))
+  
+```
+
